@@ -355,6 +355,21 @@ WorkSpace *Manager::loadBin(
 	else if(isVerbose())
 		log << "INFO: got loader from proplist: " << loader << io::endl;
 
+	// Assembly file ? Look for loader in first line
+	if(loader == nullptr && (path.extension() == "s" || path.extension() == ".S")) {
+		if(isVerbose())
+			log << "INFO: looking for loader in assembly file" << io::endl;
+		auto f = Path(path).read();
+		io::Input in(*f);
+		auto l = in.scanLine();
+		if(l.startsWith("#!")) {
+			auto name = l.substring(2, l.length() - 3);
+			loader = findLoader(name.toCString());
+			if(loader != nullptr && isVerbose())
+				log << "INFO: found loader is " << name << io::endl;
+		}
+	}
+
 	// Try with gel
 	if(!loader) {
 		gel_file_t *file = gel_open(path.toString().toCString().chars(), 0, GEL_OPEN_QUIET);
