@@ -45,9 +45,11 @@ public:
 
 protected:
 	void configure(const PropList& props) override;
+	void setup(WorkSpace * ws) override;
 	void processWorkSpace(WorkSpace *ws) override;
 	void destroy(WorkSpace *ws) override;
 	void dump(WorkSpace *ws, Output& out) override;
+	void collectStats(WorkSpace * ws) override;
 
 	// to customize
 	virtual void processAll(WorkSpace *ws);
@@ -61,7 +63,7 @@ protected:
 	string str(const Address& address);
 	string str(const Address& base, const Address& address);
 
-	inline CFG *cfg(void) const { return _cfg; }
+	inline CFG *cfg() const { return _cfg; }
 	inline Block *entry() const { return cfg()->entry(); }
 	inline Block *exit() const { return cfg()->exit(); }
 

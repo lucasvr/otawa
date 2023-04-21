@@ -92,21 +92,21 @@ CFGProcessor::CFGProcessor(cstring name, const Version& version, AbstractRegistr
 }
 
 
-
-/**
- */
+///
 void CFGProcessor::processWorkSpace(WorkSpace *ws) {
-
-	// Get the CFG collection
-	_coll = INVOLVED_CFGS(ws);
-	ASSERT(_coll);
-
-	// Visit CFG
 	processAll(ws);
+}
 
-	// Record stats
-	if(recordsStats())
-		PROCESSED_CFG(stats) = _coll->count();
+
+///
+void CFGProcessor::setup(WorkSpace * ws) {
+	_coll = INVOLVED_CFGS(ws);
+}
+
+
+///
+void CFGProcessor::collectStats(WorkSpace * ws) {
+	PROCESSED_CFG(stats) = _coll->count();
 }
 
 
