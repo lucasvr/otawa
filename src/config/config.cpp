@@ -367,6 +367,8 @@ private:
 	Path rpathFor(const Path& rpath, const Path& lpath) {
 		if(!lpath)
 			return rpath;
+		else if (!rpath)
+			return lpath;
 		else
 			return Path("$ORIGIN") / lpath.relativeTo(rpath);
 	}
@@ -375,7 +377,10 @@ private:
 	 * Compute RPath for the given plugin.
 	 */
 	Path rpathFor(sys::Path rpath, sys::Plugin *plug) {
-		return rpathFor(rpath, plug->path().dirPart());
+		if (!rpath)
+			return plug->path().dirPart();
+		else
+			return rpathFor(rpath, plug->path().dirPart());
 	}
 
 	/**

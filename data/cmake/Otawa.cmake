@@ -178,3 +178,45 @@ function(MAKE_GLISS_PROCEDURE _VAR _KEY _NMP _IRG _DEF)
      	VERBATIM
 	)
 endfunction()
+
+
+function(OTAWA_APPLICATION _APP _SOURCES)
+
+	# C++ management
+	if(CMAKE_VERSION LESS "3.1")
+		add_compile_options(--std=c++11)
+		message(STATUS "C++11 set using cflags")
+	else()
+		set(CMAKE_CXX_STANDARD 11)
+		message(STATUS "C++ set using CMAKE_CXX_STANDARD")
+	endif()
+	if(CMAKE_BUILD_TYPE MATCHES Release)
+		add_definitions(-DNDEBUG)
+	endif()
+	add_compile_options(-Wall)
+
+	# get configuration
+	OTAWA_FIND()
+	execute_process(COMMAND "${OTAWA_CONFIG}" --prefix
+		OUTPUT_VARIABLE OTAWA_PREFIX 	OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(COMMAND "${OTAWA_CONFIG}" --make-app --cflags
+		OUTPUT_VARIABLE OTAWA_CFLAGS 	OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(COMMAND "${OTAWA_CONFIG}" --make-app --libs -r ${ARGV2}
+		OUTPUT_VARIABLE OTAWA_LDFLAGS 	OUTPUT_STRIP_TRAILING_WHITESPACE)
+	message(STATUS "OTAWA_LDFLAGS=${OTAWA_LDFLAGS}")
+
+	# export the configuration
+	set(OTAWA_PREFIX "${OTAWA_PREFIX}" PARENT_SCOPE)
+	set(OTAWA_PLUGDIR "${OTAWA_PLUGDIR}" PARENT_SCOPE)
+	set(OTAWA_CFLAGS "${OTAWA_CFLAGS}" PARENT_SCOPE)
+	set(OTAWA_LDFLAGS "${OTAWA_LDFLAGS}" PARENT_SCOPE)
+	set(OTAWA_INC_DIR "${OTAWA_PREFIX}/include" PARENT_SCOPE)
+	set(OTAWA_BIN_DIR "${OTAWA_PREFIX}/bin" PARENT_SCOPE)
+	set(OTAWA_LIB_DIR "${OTAWA_PREFIX}/lib" PARENT_SCOPE)
+
+	# plugin definition
+	add_executable			("${_APP}" ${_SOURCES})
+	set_property			(TARGET "${_APP}" PROPERTY COMPILE_FLAGS "${OTAWA_CFLAGS}")
+	target_link_libraries	("${_APP}" "${OTAWA_LDFLAGS}")
+
+endfunction()
