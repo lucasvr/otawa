@@ -220,12 +220,13 @@ public:
 	virtual void endLoop(Output& out, bool contextual, Vector<SynthBlock*>& callContext) = 0;
 
 protected:
-	void printSourceLine(Output& out, Address address) {
+	bool printSourceLine(Output& out, Address address) {
 		if(!_debug)
-			return;
+			return false;
 		Option<Pair< cstring, int> > loc = _ws->process()->getSourceLine(address);
 		if(loc)
 			out << (*loc).fst << ":" << (*loc).snd;
+		return bool(loc);
 	}
 
 	void printIndent(Output& out, int n) {
@@ -383,11 +384,8 @@ public:
 		if(RECORDED(inst) || MAX_ITERATION(inst) != -1 || CONTEXTUAL_LOOP_BOUND(inst)) {
 			out << "// loop ";
 			addressOf(out, cfg, inst->address());
-			out << " (";
-			printSourceLine(out, inst->address());
-			out << ")\n";
 		}
-		else
+		else {
 			out << "loop ";
 			addressOf(out, cfg, inst->address());
 			out << " ? ";
@@ -409,9 +407,13 @@ public:
 			}
 
 
-			out << "; // 0x" << io::hex(inst->address().offset()) << " (";
-			printSourceLine(out, inst->address());
-			out << ")\n";
+			out << "; // 0x" << io::hex(inst->address().offset());
+		}
+		out << " (";
+		bool isFirst = ! printSourceLine(out, inst->address());
+		if(inst->isRepeat())
+			out << (isFirst ? "repeat instruction" : ", repeat instruction");
+		out << ")\n";
 	}
 
 	virtual void endLoop(Output& out, bool contextual, Vector<SynthBlock*>& callContext) {
@@ -428,7 +430,7 @@ private:
 		else {
 			t::uint32 offset = address - cfg->address();
 			out << '"' << label << '"';
-			if(offset > 0)
+			if(offset >= 0)
 				out << " + 0x" << io::hex(offset);
 			else
 				out << " - 0x" << io::hex(-offset);
@@ -589,18 +591,17 @@ public:
 	FFOutput(Printer& printer, bool removeDuplicatedTarget, bool context);
 
 protected:
-	virtual void setup(WorkSpace *ws) {
+	void setup(WorkSpace *ws) override {
 		has_debug = ws->isProvided(otawa::SOURCE_LINE_FEATURE);
 	}
 
-	virtual void processCFG(WorkSpace *ws, CFG *cfg);
+	void processCFG(WorkSpace *ws, CFG *cfg) override;
 private:
 	void scanFun(ContextTree *ctree);
 	void scanLoop(CFG *cfg, ContextTree *ctree, int indent, Vector<SynthBlock*>& callContext);
 	//void scanLoop(CFG *cfg, ContextTree *ctree, int indent);
 	bool checkLoop(ContextTree *ctree);
 	void scanTargets(CFG *cfg);
-
 
 	void printSourceLine(Output& out, WorkSpace *ws, Address address) {
 		if(!has_debug)
@@ -672,9 +673,9 @@ p::declare QuestFlowFactLoader::reg = p::init("QuestFlowFactLoader", Version(1, 
 // Command class
 class Command: public Application {
 public:
-	Command(void);
+	Command();
 protected:
-	virtual void work(PropList &props);
+	void work(PropList &props) override;
 private:
 	struct GeneratedCFGType {
 		enum CFGType {
@@ -1259,7 +1260,7 @@ void Command::work(PropList &props) {
 /**
  * Build the command.
  */
-Command::Command(void):
+Command::Command():
 	otawa::Application(Make("mkff", Version(1, 1, 0))
 			.author("Hugues Cassé <casse@irit.fr>")
 			.description("Generate a flow fact file for an application.")
@@ -1369,10 +1370,9 @@ void FFOutput::scanFun(ContextTree *ctree) {
 		// Display header
 		_printer.startFunction(out, ctree->cfg());
 
-		// Scan the loop
+		// scan the loop
 		Vector<SynthBlock*> callContext;
 		scanLoop(ctree->cfg(), ctree, 0, callContext);
-
 
 		// Displayer footer
 		_printer.endFunction(out);
@@ -1393,6 +1393,7 @@ void FFOutput::scanFun(ContextTree *ctree) {
 void FFOutput::scanLoop(CFG *cfg, ContextTree *ctree, int indent, Vector<SynthBlock*>& callContext) {
 	ASSERT(ctree);
 
+	// process sub-loops
 	for(ContextTree::ChildrenIterator child(ctree); child(); child++) {
 		ASSERT(child->kind() != ContextTree::FUNCTION);
 
@@ -1450,10 +1451,22 @@ void FFOutput::scanLoop(CFG *cfg, ContextTree *ctree, int indent, Vector<SynthBl
 			}
 		}
 	}
+
+	// process REPEAT instructions
+	for(ContextTree::BlockIterator b(ctree); b(); b++)
+		if(b->isBasic())
+			for(auto i: *b->toBasic())
+				if(i->isRepeat()) {
+					_printer.startLoop(out, cfg, i, contextual, callContext);
+					_printer.endLoop(out, contextual, callContext);
+				}
+
 }
 
 
 bool FFOutput::checkLoop(ContextTree *ctree) {
+
+	// look for a loop
 	for(ContextTree::ChildrenIterator child(ctree); child(); child++) {
 		ASSERT(child->kind() != ContextTree::FUNCTION);
 		if(child->kind() == ContextTree::LOOP) {
@@ -1463,6 +1476,14 @@ bool FFOutput::checkLoop(ContextTree *ctree) {
 				return true;
 		}
 	}
+
+	// look for a repeat instruction
+	for(auto b: *ctree->cfg())
+		if(b->isBasic())
+			for(auto i: *b->toBasic())
+				if(i->isRepeat())
+					return true;
+
 	return false;
 }
 
