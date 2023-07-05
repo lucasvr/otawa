@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.12)
 project("otawa")
 set(PACKAGE "otawa")
 
@@ -217,7 +217,6 @@ endif()
 
 # add subdirectories
 add_subdirectory(src)
-add_subdirectory(doc)
 add_subdirectory(include)
 add_subdirectory(bin)
 
