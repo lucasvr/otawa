@@ -43,7 +43,7 @@ DotDisplayer::DotDisplayer(void): Displayer("DotDisplayer", Version(2, 0, 0)) {
  * @param v		Current block.
  */
 void DotDisplayer::displayName(CFG *g, otawa::Block *v) {
-	cout << '"' << g->name() << "_" << g->index() << "_" << v->index() << '"';
+	cout << '"' << g->name() << "@" << g->index() << "," << v->index() << '"';
 }
 
 
@@ -51,7 +51,7 @@ void DotDisplayer::displayName(CFG *g, otawa::Block *v) {
  */
 void DotDisplayer::processWorkSpace(WorkSpace *ws) {
 	const CFGCollection& coll = **otawa::INVOLVED_CFGS(ws);
-	cout << "digraph " << coll[0]->label() << " {\n"
+	cout << "digraph \"" << coll[0]->label() << "\" {\n"
 	 	 << "node [shape=Mrecord, labeljust=l, fontsize=10];\n";
 
 	// traverse CFGs

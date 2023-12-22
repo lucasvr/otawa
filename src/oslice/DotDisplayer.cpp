@@ -63,9 +63,9 @@ DotDisplayer::DotDisplayer(WorkSpace* ws, String path, int showSlicing) {
  */
 void DotDisplayer::displayName(CFG *g, otawa::Block *v, otawa::Block *u) {
 	//_output << '"' << g->name() << "_" << v->index() << '"';
-	_output << '"' << g->name() << "_" << g->index() << "_" << v->index() ;
+	_output << '"' << g->name() << "@" << g->index() << "," << v->index() ;
 	if(u != 0)
-		_output << "_" << u->index();
+		_output << "," << u->index();
 
 	_output << '"';
 }
@@ -77,7 +77,7 @@ void DotDisplayer::display(const CFGCollection& coll) {
 
 	if(_skip == 1) return;
 
-	_output << "digraph " << coll[0]->label() << " {\n"
+	_output << "digraph \"" << coll[0]->label() << "\" {\n"
 	 	 << "node [shape=Mrecord, labeljust=l, fontsize=10];\n";
 
 	// traverse CFGs
